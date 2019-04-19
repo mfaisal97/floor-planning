@@ -1,6 +1,4 @@
-export  MIPDIR="C:\Users\mfaisal\Desktop\MickeyFiles\DigitalDesign\MiniProject\mipcl-2.1.3.linux-x86_64\mipcl-2.1.3"
+g++ -c -Imipcl-2.1.3/mipcl/headers -m64 -std=c++11 -DMIP_API= main.cpp
+g++ main.o -Lmipcl-2.1.3/lib -lmipcl  -o app -std=c++11
 
-g++ -I\$MIPDIR/mipcl/headers main.cpp\\
-g++ -shared-libgcc testMIP.o \$MIPDIR/bin/mipcl.dll -o main.exe
-
-./main.exe 1
+./app 2
