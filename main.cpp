@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -18,7 +19,14 @@ struct HardReactangle{
 
 struct SoftRectangle{
         int area;
-        int predicted_length;
+        int wMin;
+        int wMax;
+        int hMin;
+        int hMax;
+        double delta;
+        double c;
+        int width;
+        int length;
         int predicted_width;
         long x_position;
         long y_position;
@@ -69,7 +77,11 @@ bool parseInputConstraints(vector<HardReactangle>& dieRectangles, vector<HardRea
                 inputFile >> softCount;
                 softRectangles.resize(softCount);
                 for (int i =0; i < softCount; i++){
-                        inputFile >> softRectangles[i].area;
+                        inputFile >> softRectangles[i].area >> softRectangles[i].wMin >> softRectangles[i].wMax;
+                        softRectangles[i].hMax = int (ceil(1.0 * softRectangles[i].area / softRectangles[i].wMin));
+                        softRectangles[i].hMin = int (ceil(1.0 * softRectangles[i].area / softRectangles[i].wMax));
+                        softRectangles[i].delta = 1.0 * ((1.0 * softRectangles[i].area / softRectangles[i].wMax) - (1.0 * softRectangles[i].area / softRectangles[i].wMin)) / (softRectangles[i].wMax - softRectangles[i].wMin);
+                        softRectangles[i].c = (1.0 * softRectangles[i].area / softRectangles[i].wMin) - softRectangles[i].delta * softRectangles[i].wMin;
                 }
 
                 inputFile.close();
@@ -88,13 +100,15 @@ int getikRelation(int i, int k){
         for (i_count = 0; i_count < i; i_count++){
                 c+= i_count;
         }
-        return i_count + k-1;
+        return i_count + k - 1;
 }
 
-void checkThis(){
+void checkThis(CMIP& prob){
         prob.printMatrix("matrix.txt");
         system("read -p \'Press Enter to continue...\' var");
 }
+
+// checkThis(prob);
 
 bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>& coreRectangles, vector<SoftRectangle>& softRectangles, int w, int h){
         try {
@@ -108,6 +122,7 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
 
                 //Adding type One Constraints Count
+                int dieCount = dieRectangles.size();
 
 
 
@@ -115,102 +130,214 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                 //Adding type Two Constraints Count
                 int coreCount = coreRectangles.size();
-                int permCoreCount = (coreCount*(coreCount-1))/2;
+                
 
                 
 
-
-
-
-
                 //Adding type Three Constraints Count
+                int softCount = softRectangles.size();
 
 
-                int totalVarsCount = hVarCount + 2*coreCount + 2*permCoreCount;
-                int totalEquationsCount = 2*coreCount + 4*permCoreCount;
+                int totalShapesCount = dieCount + coreCount + softCount;
+
+                int permCount = (totalShapesCount*(totalShapesCount-1))/2;
+                int permIndexBase = hVarCount + 2 * totalShapesCount + softCount;
+
+                int totalVarsCount = permIndexBase + 2*permCount;
+                
+                int totalEquationsCount = 2*totalShapesCount + 4*permCount;
                 prob.openMatrix(totalEquationsCount,totalVarsCount,totalEquationsCount*totalVarsCount);
                 prob.addVar(0,CMIP::VAR_INT, -1, 0.0,CLP::VAR_INF);
 
 
                 //Adding type One Constraints
 
-
-                //Adding type Two Constraints
+                
                 //Adding variables
+                //Adding main variables
+                //typeTwo
                 for(int i = 0; i< coreCount; i++){
-                        //Variables constraints
-                        prob.addVar(1 + 2*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
-                        prob.addVar(1 + 2*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
+                        prob.addVar(1 + 2 * dieCount + 2*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
+                        prob.addVar(1 + 2 * dieCount + 2*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
+                }
+
+                //Type Three
+                for(int i = 0; i < softCount; i++ ){
+                        prob.addVar(1 + 2 * dieCount + 2 * coreCount + 3*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
+                        prob.addVar(1 + 2 * dieCount + 2 * coreCount + 3*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
+                        prob.addVar(1 + 2 * dieCount + 2 * coreCount + 3*i + 2,CMIP::VAR_INT, 0.0 , softRectangles[i].wMin, softRectangles[i].wMax);
                 }
 
 
-                for(int i = 0; i< coreCount; i++){
-                        //adding assistant variables
-                        for(int k = i + 1; k < coreCount; k++){
-                                prob.addVar(1 + 2*coreCount + 2* getikRelation(i,k),CMIP::VAR_BIN, 0.0,false,true );
-                                prob.addVar(1 + 2*coreCount + 2* getikRelation(i,k) + 1,CMIP::VAR_BIN, 0.0,false,true);
+                //adding assistant variables
+                for(int i = 0; i< totalShapesCount; i++){
+                        for(int k = i + 1; k < totalShapesCount; k++){
+                                prob.addVar(permIndexBase + 2* getikRelation(i,k),CMIP::VAR_BIN, 0.0,false,true );
+                                prob.addVar(permIndexBase + 2* getikRelation(i,k) + 1,CMIP::VAR_BIN, 0.0,false,true);
                         }
                 }
 
 
-                cout << coreCount << endl;
-                cout << permCoreCount << endl;
                 //Adding constraints
-                
+                //Type Two
                 for(int i =0; i < coreCount; i++){
-                        //small modules size constraints
+                        //cells size constraints
+                        prob.addCtr(2 * dieCount + 2*i,0, -CLP::VAR_INF , W - coreRectangles[i].width);
+                        prob.addEntry(1, 2 * dieCount + 2*i, 1 + 2 * dieCount + 2*i);
 
-                        prob.addCtr(2*i,0, -CLP::VAR_INF , W - coreRectangles[i].width);
-                        prob.addEntry(1, 2*i, 1 + 2*i);
-
-                        prob.addCtr(2*i+1,0, -CLP::VAR_INF , 0 - coreRectangles[i].length);                        
-                        prob.addEntry(1, 2*i+1, 1 + 2*i + 1);
-                        prob.addEntry(-1, 2*i+1, 0);
+                        prob.addCtr(2 * dieCount + 2*i+1,0, -CLP::VAR_INF , 0 - coreRectangles[i].length);                        
+                        prob.addEntry(1, 2 * dieCount +2*i+1, 1 + 2 * dieCount +  2*i + 1);
+                        prob.addEntry(-1, 2 * dieCount +2*i+1, 0);
                 }
 
+                //Type Three
+                for(int i =0; i < softCount; i++){
+                        //cells size constraints
+                        prob.addCtr(2 * dieCount + 2 * coreCount + 2 * i,0, -CLP::VAR_INF , W);
+                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i, 1 + 2 * dieCount + 2 * coreCount + 3*i);
+                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i, 1 + 2 * dieCount + 2 * coreCount + 3*i + 2);
 
-                for(int i =0; i < coreCount; i++){
+                        prob.addCtr(2 * dieCount + 2 * coreCount + 2 * i + 1,0, -CLP::VAR_INF , 0 - softRectangles[i].c);                        
+                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i + 1, 1 + 2 * dieCount + 2 * coreCount + 3*i + 1);
+                        prob.addEntry(softRectangles[i].delta, 2 * dieCount + 2 * coreCount + 2 * i + 1, 1 + 2 * dieCount + 2 * coreCount + 3*i + 2);
+                        prob.addEntry(-1, 2 * dieCount + 2 * coreCount + 2 * i + 1, 0);
+                }
+
+                checkThis(prob);
+
+
+
+                for(int i = dieCount; i < dieCount + coreCount; i++){
                         //small modules overlapping constraints
-                        for (int k = i +1; k < coreCount; k++){
+                        for (int k = i +1; k < dieCount + coreCount; k++){
                                 //relation One
-                                prob.addCtr(2 * coreCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,- coreRectangles[i].width);
-                                prob.addEntry(1, 2 * coreCount + 4*getikRelation(i,k), 1 + 2*i);                    //normal
-                                prob.addEntry(-1, 2 * coreCount + 4*getikRelation(i,k), 1 + 2*k);                   //normal right
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,- coreRectangles[i-dieCount].width);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 2*i);                    //normal
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 2*k);                   //normal right
 
-                                prob.addEntry(-W, 2 * coreCount + 4*getikRelation(i,k) + 0, 1 + 2*coreCount + 2* getikRelation(i,k));
-                                prob.addEntry(-W, 2 * coreCount + 4*getikRelation(i,k) + 0, 1 + 2*coreCount + 2* getikRelation(i,k) + 1);
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k));
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k) + 1);
 
 
                                 //relation Two
-                                prob.addCtr(2 * coreCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - coreRectangles[i].length);
-                                prob.addEntry(1, 2 * coreCount + 4*getikRelation(i,k) + 1, 1 + 2*i + 1);
-                                prob.addEntry(-1, 2 * coreCount + 4*getikRelation(i,k) + 1, 1 + 2*k + 1);
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - coreRectangles[i-dieCount].length);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 2*i + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 2*k + 1);
 
-                                prob.addEntry(-H, 2 * coreCount + 4*getikRelation(i,k) + 1, 1 + 2*coreCount + 2* getikRelation(i,k) );
-                                prob.addEntry(H, 2 * coreCount + 4*getikRelation(i,k) + 1, 1 + 2*coreCount + 2* getikRelation(i,k) + 1);
+                                prob.addEntry(-H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) );
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) + 1);
 
 
                                 //relation Three
-                                prob.addCtr(2 * coreCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W - coreRectangles[k].width);
-                                prob.addEntry(1, 2 * coreCount + 4*getikRelation(i,k) + 2, 1 + 2*k );
-                                prob.addEntry(-1, 2 * coreCount + 4*getikRelation(i,k) + 2, 1 + 2*i );
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W - coreRectangles[k-dieCount].width);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 2*k );
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 2*i );
 
-                                prob.addEntry(W, 2 * coreCount + 4*getikRelation(i,k) + 2, 1 + 2*coreCount + 2* getikRelation(i,k) );
-                                prob.addEntry(-W, 2 * coreCount + 4*getikRelation(i,k) + 2, 1 + 2*coreCount + 2* getikRelation(i,k) +1);
+                                prob.addEntry(W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) );
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) +1);
 
 
                                 //relation Four
-                                prob.addCtr(2 * coreCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - coreRectangles[k].length);
-                                prob.addEntry(1, 2 * coreCount + 4*getikRelation(i,k) + 3, 1 + 2*k + 1);
-                                prob.addEntry(-1, 2 * coreCount + 4*getikRelation(i,k) + 3, 1 + 2*i + 1);
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - coreRectangles[k-dieCount].length);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 2*k + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 2*i + 1);
 
-                                prob.addEntry(H, 2 * coreCount + 4*getikRelation(i,k) + 3, 1 + 2*coreCount + 2* getikRelation(i,k));
-                                prob.addEntry(H, 2 * coreCount + 4*getikRelation(i,k) + 3, 1 + 2*coreCount + 2* getikRelation(i,k) +1);
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k));
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k) +1);
+                                checkThis(prob);
+                        }
+
+
+                        for (int k = dieCount + coreCount; k < dieCount + coreCount + softCount; k++){
+                                //relation One
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,- coreRectangles[i-dieCount].width);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 2*i);                    //normal
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*k - dieCount - coreCount);                   //normal right
+
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k));
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k) + 1);
+
+
+                                //relation Two
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - coreRectangles[i-dieCount].length);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 2*i + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*k - dieCount - coreCount + 1);
+
+                                prob.addEntry(-H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) );
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) + 1);
+
+
+                                //relation Three
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W - softRectangles[k- dieCount - coreCount].width);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*k - dieCount - coreCount );
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 2*i );
+
+                                prob.addEntry(W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) );
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) +1);
+
+
+                                //relation Four
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - softRectangles[k- dieCount - coreCount].c);
+                                // - coreRectangles[k].length
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 1);
+                                prob.addEntry(softRectangles[k- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 2);
+                                
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 2*i + 1);
+
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k));
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k) +1);
+
+                                checkThis(prob);
                         }
                 }
 
+                for(int i = dieCount + coreCount; i < dieCount + coreCount + softCount; i++){
+                        for (int k = i + 1; k < dieCount + coreCount + softCount; k++){
+                                //relation One
+                                //cout << "ana hena y john \t" << 2*totalShapesCount + 4*getikRelation(i,k) << "\n";
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,0);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*i - dieCount - coreCount);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*i - dieCount - coreCount+2);                    //normal
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*k - dieCount - coreCount);                   //normal right
 
-                //Adding type Three Constraints
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k));
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k) + 1);
+
+
+                                //relation Two
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - softRectangles[i-dieCount-coreCount].c);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*i - dieCount - coreCount + 1);
+                                prob.addEntry(softRectangles[i- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*k - dieCount - coreCount + 2);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*k - dieCount - coreCount + 1);
+
+                                prob.addEntry(-H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) );
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) + 1);
+
+
+                                //relation Three
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*k - dieCount - coreCount );
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*k - dieCount - coreCount + 2);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*i - dieCount - coreCount );
+
+                                prob.addEntry(W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) );
+                                prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) +1);
+
+
+                                //relation Four
+                                prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - softRectangles[k- dieCount - coreCount].c);
+                                // - coreRectangles[k].length
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 1);
+                                prob.addEntry(softRectangles[k- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 2);
+                                
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*i - dieCount - coreCount + 1);
+
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k));
+                                prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k) +1);
+                                checkThis(prob);
+                        }
+
+                }                
 
 
 		prob.closeMatrix();
