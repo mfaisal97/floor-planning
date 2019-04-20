@@ -113,6 +113,7 @@ void checkThis(CMIP& prob){
 
 int CoreWidth;
 int CoreLength;
+bool freePadsPlacement = false;
 bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>& coreRectangles, vector<SoftRectangle>& softRectangles, int w, int h){
         try {
 		CMIP prob("Floor-Planning");
@@ -378,8 +379,10 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                 cout << "Finally\t" << CoreWidth << "\t" << CoreLength << endl;
                 if ( dieRectangles.size() >= 1 && (CoreWidth + CoreLength) * 2 < (min(dieRectangles[0].width , dieRectangles[0].length) * (dieRectangles[0].count -4))){
                         cout << "The die is i/o pads constrained \n";
+                        
                 }else {
                         cout << "The die is core constrained \n";
+                        freePadsPlacement = true;
                 }
 	}
 	catch(CException* pe) {
@@ -395,18 +398,32 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 bool visualizeProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>& coreRectangles, vector<SoftRectangle>& softRectangles, string outputFileName){
         
         std::ofstream outFile (outputFileName);
+        outFile << "Solving Part One (i/o pads)\n";
+        if(freePadsPlacement){
+                outFile << "The die is core constrained ...\n";
+
+        }else {
+                outFile << "The die is i/o pads constrained ...\n";
+
+        }
         
-        outFile << "Solving Part Two (i/o pads)\n";
+        outFile << "\n\nSolving Part Two (i/o pads)\n";
+        int totalArea = CoreWidth * CoreLength;
+        int totalusedArea = 0;
         outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
         for (int i = 0; i < coreRectangles.size(); i++){
                 outFile << i << "\t\t\t\t\t\t" << coreRectangles[i].x_position << "\t\t\t\t\t\t" << coreRectangles[i].y_position << "\t\t\t\t" << coreRectangles[i].width << "\t\t\t\t\t" << coreRectangles[i].length << endl;
+                totalusedArea += (coreRectangles[i].width * coreRectangles[i].length);
         }
+        outFile << "-------------------------------\nAfter placing hard cells:\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
 
         outFile << "\n\n\nSolving Part Three (i/o pads)\n";
         outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
         for (int i = 0; i < softRectangles.size(); i++){
                 outFile << i << "\t\t\t\t\t\t" << softRectangles[i].x_position << "\t\t\t\t\t\t" << softRectangles[i].y_position << "\t\t\t\t" << softRectangles[i].width << "\t\t\t\t\t" << softRectangles[i].length << endl;
+                totalusedArea += (softRectangles[i].width * softRectangles[i].length);
         }
+        outFile << "-------------------------------\nAfter placing soft cells:\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
 
 
         outFile.close();
