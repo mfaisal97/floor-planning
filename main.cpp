@@ -110,6 +110,9 @@ void checkThis(CMIP& prob){
 
 // checkThis(prob);
 
+
+int CoreWidth;
+int CoreLength;
 bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>& coreRectangles, vector<SoftRectangle>& softRectangles, int w, int h){
         try {
 		CMIP prob("Floor-Planning");
@@ -121,7 +124,7 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
 
                 //Adding type One Constraints Count
-                int dieCount = dieRectangles.size();
+                int dieCount = 0;
 
 
                 //Adding type Two Constraints Count
@@ -343,6 +346,41 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
 
                 //Now doing part one
+                int* indicies;
+                double* vals;
+                prob.getSolution(vals,indicies);
+
+                for(int i =0; i < totalVarsCount; i++){
+                        if(indicies[i] == 0){
+                                CoreWidth = vals[i];
+                        }else if (indicies[i] == 1){
+                                CoreLength = vals[i];
+                        }else if (indicies[i] < hVarCount + 2* coreCount){
+                                if (indicies[i] % 2 ==0){
+                                        coreRectangles[(indicies[i] -2) / 2].x_position = vals[i];
+                                }else {
+                                        coreRectangles[(indicies[i] - 2) / 2].y_position = vals[i];
+                                }
+                        }else if (indicies[i] < hVarCount + 2* coreCount + 3* softCount){
+                                if ((indicies[i]- 2 - 2 * coreCount) % 3 ==0){
+                                        softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].x_position = vals[i];
+                                }else if ((indicies[i]- 2 - 2 * coreCount) % 3 ==1){
+                                        softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].y_position = vals[i];
+                                }else {
+                                        softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].width = vals[i];
+                                        softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].length = softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].delta * softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].width + softRectangles[(indicies[i] - 2 - 2 * coreCount) / 3].c;
+                                }
+                        }
+                }
+
+
+
+                cout << "Finally\t" << CoreWidth << "\t" << CoreLength << endl;
+                if ( dieRectangles.size() >= 1 && (CoreWidth + CoreLength) * 2 < (min(dieRectangles[0].width , dieRectangles[0].length) * (dieRectangles[0].count -4))){
+                        cout << "The die is i/o pads constrained \n";
+                }else {
+                        cout << "The die is core constrained \n";
+                }
 	}
 	catch(CException* pe) {
 		std::cerr << pe->what() << std::endl;
@@ -354,7 +392,24 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
 
 
-bool visualizeProblem(){
+bool visualizeProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>& coreRectangles, vector<SoftRectangle>& softRectangles, string outputFileName){
+        
+        std::ofstream outFile (outputFileName);
+        
+        outFile << "Solving Part Two (i/o pads)\n";
+        outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
+        for (int i = 0; i < coreRectangles.size(); i++){
+                outFile << i << "\t\t\t\t\t\t" << coreRectangles[i].x_position << "\t\t\t\t\t\t" << coreRectangles[i].y_position << "\t\t\t\t" << coreRectangles[i].width << "\t\t\t\t\t" << coreRectangles[i].length << endl;
+        }
+
+        outFile << "\n\n\nSolving Part Three (i/o pads)\n";
+        outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
+        for (int i = 0; i < softRectangles.size(); i++){
+                outFile << i << "\t\t\t\t\t\t" << softRectangles[i].x_position << "\t\t\t\t\t\t" << softRectangles[i].y_position << "\t\t\t\t" << softRectangles[i].width << "\t\t\t\t\t" << softRectangles[i].length << endl;
+        }
+
+
+        outFile.close();
         return true;
 }
 
@@ -379,6 +434,8 @@ int main(int argc, char *argv[]){
         }
 
         solveProblem(dieHardRectangles, coreHardRectangles, softRectangles, stoi(argv[2]) , stoi(argv[3]));
+
+        visualizeProblem(dieHardRectangles, coreHardRectangles, softRectangles, "OutFor" + fileName);
 
         
 
