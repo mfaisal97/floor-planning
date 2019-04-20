@@ -117,21 +117,15 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                 //General Paramters
                 int W = w;
                 int H = h;
-                int hVarCount = 1;
-
+                int hVarCount = 2;
 
 
                 //Adding type One Constraints Count
                 int dieCount = dieRectangles.size();
 
 
-
-
-
                 //Adding type Two Constraints Count
                 int coreCount = coreRectangles.size();
-                
-
                 
 
                 //Adding type Three Constraints Count
@@ -148,6 +142,7 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                 int totalEquationsCount = 2*totalShapesCount + 4*permCount;
                 prob.openMatrix(totalEquationsCount,totalVarsCount,totalEquationsCount*totalVarsCount);
                 prob.addVar(0,CMIP::VAR_INT, -1, 0.0,CLP::VAR_INF);
+                prob.addVar(1,CMIP::VAR_INT, -1, 0.0,CLP::VAR_INF);
 
 
                 //Adding type One Constraints
@@ -157,15 +152,15 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                 //Adding main variables
                 //typeTwo
                 for(int i = 0; i< coreCount; i++){
-                        prob.addVar(1 + 2 * dieCount + 2*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
-                        prob.addVar(1 + 2 * dieCount + 2*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
+                        prob.addVar(hVarCount + 2 * dieCount + 2*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
+                        prob.addVar(hVarCount + 2 * dieCount + 2*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
                 }
 
                 //Type Three
                 for(int i = 0; i < softCount; i++ ){
-                        prob.addVar(1 + 2 * dieCount + 2 * coreCount + 3*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
-                        prob.addVar(1 + 2 * dieCount + 2 * coreCount + 3*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
-                        prob.addVar(1 + 2 * dieCount + 2 * coreCount + 3*i + 2,CMIP::VAR_INT, 0.0 , softRectangles[i].wMin, softRectangles[i].wMax);
+                        prob.addVar(hVarCount + 2 * dieCount + 2 * coreCount + 3*i,CMIP::VAR_INT, 0.0, 0.0,CLP::VAR_INF);
+                        prob.addVar(hVarCount + 2 * dieCount + 2 * coreCount + 3*i + 1,CMIP::VAR_INT, 0.0 , 0.0,CLP::VAR_INF);
+                        prob.addVar(hVarCount + 2 * dieCount + 2 * coreCount + 3*i + 2,CMIP::VAR_INT, 0.0 , softRectangles[i].wMin, softRectangles[i].wMax);
                 }
 
 
@@ -182,24 +177,26 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                 //Type Two
                 for(int i =0; i < coreCount; i++){
                         //cells size constraints
-                        prob.addCtr(2 * dieCount + 2*i,0, -CLP::VAR_INF , W - coreRectangles[i].width);
-                        prob.addEntry(1, 2 * dieCount + 2*i, 1 + 2 * dieCount + 2*i);
+                        prob.addCtr(2 * dieCount + 2*i,0, -CLP::VAR_INF , 0 - coreRectangles[i].width);
+                        prob.addEntry(1, 2 * dieCount + 2*i, hVarCount + 2 * dieCount + 2*i);
+                        prob.addEntry(-1, 2 * dieCount +2*i, 1);
 
                         prob.addCtr(2 * dieCount + 2*i+1,0, -CLP::VAR_INF , 0 - coreRectangles[i].length);                        
-                        prob.addEntry(1, 2 * dieCount +2*i+1, 1 + 2 * dieCount +  2*i + 1);
+                        prob.addEntry(1, 2 * dieCount +2*i+1, hVarCount + 2 * dieCount +  2*i + 1);
                         prob.addEntry(-1, 2 * dieCount +2*i+1, 0);
                 }
 
                 //Type Three
                 for(int i =0; i < softCount; i++){
                         //cells size constraints
-                        prob.addCtr(2 * dieCount + 2 * coreCount + 2 * i,0, -CLP::VAR_INF , W);
-                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i, 1 + 2 * dieCount + 2 * coreCount + 3*i);
-                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i, 1 + 2 * dieCount + 2 * coreCount + 3*i + 2);
+                        prob.addCtr(2 * dieCount + 2 * coreCount + 2 * i,0, -CLP::VAR_INF , 0);
+                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i, hVarCount + 2 * dieCount + 2 * coreCount + 3*i);
+                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i, hVarCount + 2 * dieCount + 2 * coreCount + 3*i + 2);
+                        prob.addEntry(-1, 2 * dieCount + 2 * coreCount + 2 * i, 1);
 
                         prob.addCtr(2 * dieCount + 2 * coreCount + 2 * i + 1,0, -CLP::VAR_INF , 0 - softRectangles[i].c);                        
-                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i + 1, 1 + 2 * dieCount + 2 * coreCount + 3*i + 1);
-                        prob.addEntry(softRectangles[i].delta, 2 * dieCount + 2 * coreCount + 2 * i + 1, 1 + 2 * dieCount + 2 * coreCount + 3*i + 2);
+                        prob.addEntry(1, 2 * dieCount + 2 * coreCount + 2 * i + 1, hVarCount + 2 * dieCount + 2 * coreCount + 3*i + 1);
+                        prob.addEntry(softRectangles[i].delta, 2 * dieCount + 2 * coreCount + 2 * i + 1, hVarCount + 2 * dieCount + 2 * coreCount + 3*i + 2);
                         prob.addEntry(-1, 2 * dieCount + 2 * coreCount + 2 * i + 1, 0);
                 }
 
@@ -212,8 +209,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                         for (int k = i +1; k < dieCount + coreCount; k++){
                                 //relation One
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,- coreRectangles[i-dieCount].width);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 2*i);                    //normal
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 2*k);                   //normal right
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 2*i);                    //normal
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 2*k);                   //normal right
 
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k));
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k) + 1);
@@ -221,8 +218,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Two
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - coreRectangles[i-dieCount].length);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 2*i + 1);
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 2*k + 1);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 2*i + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 2*k + 1);
 
                                 prob.addEntry(-H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) );
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) + 1);
@@ -230,8 +227,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Three
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W - coreRectangles[k-dieCount].width);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 2*k );
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 2*i );
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 2*k );
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 2*i );
 
                                 prob.addEntry(W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) );
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) +1);
@@ -239,8 +236,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Four
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - coreRectangles[k-dieCount].length);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 2*k + 1);
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 2*i + 1);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 2*k + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 2*i + 1);
 
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k));
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k) +1);
@@ -251,8 +248,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                         for (int k = dieCount + coreCount; k < dieCount + coreCount + softCount; k++){
                                 //relation One
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,- coreRectangles[i-dieCount].width);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 2*i);                    //normal
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*k - dieCount - coreCount);                   //normal right
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 2*i);                    //normal
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 3*k - dieCount - coreCount);                   //normal right
 
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k));
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k) + 1);
@@ -260,8 +257,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Two
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - coreRectangles[i-dieCount].length);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 2*i + 1);
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*k - dieCount - coreCount + 1);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 2*i + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 3*k - dieCount - coreCount + 1);
 
                                 prob.addEntry(-H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) );
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) + 1);
@@ -269,8 +266,8 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Three
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W - softRectangles[k- dieCount - coreCount].width);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*k - dieCount - coreCount );
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 2*i );
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 3*k - dieCount - coreCount );
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 2*i );
 
                                 prob.addEntry(W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) );
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) +1);
@@ -279,10 +276,10 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                                 //relation Four
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - softRectangles[k- dieCount - coreCount].c);
                                 // - coreRectangles[k].length
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 1);
-                                prob.addEntry(softRectangles[k- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 2);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 3*k - dieCount - coreCount + 1);
+                                prob.addEntry(softRectangles[k- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 3*k - dieCount - coreCount + 2);
                                 
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 2*i + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 2*i + 1);
 
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k));
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k) +1);
@@ -296,9 +293,9 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                                 //relation One
                                 //cout << "ana hena y john \t" << 2*totalShapesCount + 4*getikRelation(i,k) << "\n";
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k), 0, -CLP::VAR_INF,0);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*i - dieCount - coreCount);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*i - dieCount - coreCount+2);                    //normal
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), 1 + 3*k - dieCount - coreCount);                   //normal right
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 3*i - dieCount - coreCount);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 3*i - dieCount - coreCount+2);                    //normal
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k), hVarCount + 3*k - dieCount - coreCount);                   //normal right
 
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k));
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k), permIndexBase + 2* getikRelation(i,k) + 1);
@@ -306,9 +303,9 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Two
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 1, 0, -CLP::VAR_INF, H - softRectangles[i-dieCount-coreCount].c);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*i - dieCount - coreCount + 1);
-                                prob.addEntry(softRectangles[i- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*k - dieCount - coreCount + 2);
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, 1 + 3*k - dieCount - coreCount + 1);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 3*i - dieCount - coreCount + 1);
+                                prob.addEntry(softRectangles[i- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 3*k - dieCount - coreCount + 2);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 1, hVarCount + 3*k - dieCount - coreCount + 1);
 
                                 prob.addEntry(-H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) );
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 1, permIndexBase + 2* getikRelation(i,k) + 1);
@@ -316,9 +313,9 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
                                 //relation Three
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 2, 0, -CLP::VAR_INF, W);
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*k - dieCount - coreCount );
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*k - dieCount - coreCount + 2);
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, 1 + 3*i - dieCount - coreCount );
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 3*k - dieCount - coreCount );
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 3*k - dieCount - coreCount + 2);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 2, hVarCount + 3*i - dieCount - coreCount );
 
                                 prob.addEntry(W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) );
                                 prob.addEntry(-W, 2*totalShapesCount + 4*getikRelation(i,k) + 2, permIndexBase + 2* getikRelation(i,k) +1);
@@ -327,10 +324,10 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
                                 //relation Four
                                 prob.addCtr(2*totalShapesCount + 4*getikRelation(i,k) + 3, 0, -CLP::VAR_INF, 2*H - softRectangles[k- dieCount - coreCount].c);
                                 // - coreRectangles[k].length
-                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 1);
-                                prob.addEntry(softRectangles[k- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*k - dieCount - coreCount + 2);
+                                prob.addEntry(1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 3*k - dieCount - coreCount + 1);
+                                prob.addEntry(softRectangles[k- dieCount - coreCount].delta, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 3*k - dieCount - coreCount + 2);
                                 
-                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, 1 + 3*i - dieCount - coreCount + 1);
+                                prob.addEntry(-1, 2*totalShapesCount + 4*getikRelation(i,k) + 3, hVarCount + 3*i - dieCount - coreCount + 1);
 
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k));
                                 prob.addEntry(H, 2*totalShapesCount + 4*getikRelation(i,k) + 3, permIndexBase + 2* getikRelation(i,k) +1);
@@ -343,6 +340,9 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 		prob.closeMatrix();
 		prob.optimize();
 		prob.printSolution("floor-planning.sol");
+
+
+                //Now doing part one
 	}
 	catch(CException* pe) {
 		std::cerr << pe->what() << std::endl;
