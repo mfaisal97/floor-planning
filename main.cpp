@@ -377,13 +377,6 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
 
                 cout << "Finally\t" << CoreWidth << "\t" << CoreLength << endl;
-                if ( dieRectangles.size() >= 1 && (CoreWidth + CoreLength) * 2 < (min(dieRectangles[0].width , dieRectangles[0].length) * (dieRectangles[0].count -4))){
-                        cout << "The die is i/o pads constrained \n";
-                        
-                }else {
-                        cout << "The die is core constrained \n";
-                        freePadsPlacement = true;
-                }
 	}
 	catch(CException* pe) {
 		std::cerr << pe->what() << std::endl;
@@ -397,33 +390,110 @@ bool solveProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>&
 
 bool visualizeProblem(vector<HardReactangle>& dieRectangles, vector<HardReactangle>& coreRectangles, vector<SoftRectangle>& softRectangles, string outputFileName){
         
+        int CoreWidthStart = dieRectangles[0].width;
+        int CoreLengthStart = dieRectangles[0].length;
+
         std::ofstream outFile (outputFileName);
         outFile << "Solving Part One (i/o pads)\n";
+
+        int minWidthCount = floor(1.0 * CoreWidth / dieRectangles[0].width);
+        int minLengthCount = floor(1.0 * CoreLength / dieRectangles[0].length);
+        freePadsPlacement = (((minWidthCount + minLengthCount) * 2) >= dieRectangles[0].count);
+
+        int ind = 0;
         if(freePadsPlacement){
                 outFile << "The die is core constrained ...\n";
+                
+                for(int i =1; i <= minWidthCount; i++){
+                        dieRectangles[i-1].x_position = dieRectangles[0].width * i;
+                        dieRectangles[i-1].y_position = 0;
+                }
 
+                for(int i =minWidthCount + 1; i <= minWidthCount *2; i++){
+                        dieRectangles[i-1].x_position = dieRectangles[0].width * (i - minWidthCount);
+                        dieRectangles[i-1].y_position = dieRectangles[0].length + CoreLength;
+                        
+                }
+
+                ind  = minWidthCount * 2;
         }else {
-                outFile << "The die is i/o pads constrained ...\n";
 
+                outFile << "The die is i/o pads constrained ...\n";
+                int remainingCells = dieRectangles[0].count - ((minWidthCount + minLengthCount) * 2);
+                int halfRemainingCells = remainingCells /2;
+                int minWidthCountOne = ((minWidthCount + minLengthCount) * 2) + remainingCells - halfRemainingCells;
+
+                for(int i =1; i <= minWidthCountOne; i++){
+                        dieRectangles[i-1].x_position = dieRectangles[0].width * i;
+                        dieRectangles[i-1].y_position = 0;
+                }
+
+                CoreWidth = minWidthCountOne * dieRectangles[0].width;
+
+                
+                int minWidthCountTwo = minWidthCount + halfRemainingCells;
+
+                for(int i =minWidthCountOne + 1; i <= minWidthCountOne + minWidthCountTwo; i++){
+                        dieRectangles[i-1].x_position = dieRectangles[0].width * (i - minWidthCountOne);
+                        dieRectangles[i-1].y_position = dieRectangles[0].length + CoreLength;
+                        
+                        }
+
+                ind  = minWidthCountOne + minWidthCountTwo;
         }
-        
-        outFile << "\n\nSolving Part Two (i/o pads)\n";
+
+        for (int i = ind + 1; i < ind + minLengthCount; i++){
+                dieRectangles[i-1].x_position = 0;
+                dieRectangles[i-1].y_position = dieRectangles[0].length  * (i - ind) ;
+        }
+
+        for (int i = ind + minLengthCount + 1; i < dieRectangles[0].count; i++){
+                dieRectangles[i-1].x_position = dieRectangles[0].width + CoreWidth;
+                dieRectangles[i-1].y_position = dieRectangles[0].length  * (i -ind - minLengthCount);
+        }
+
+        int usedAreadFromPads = 0;
+        outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
+        for (int i = 0; i < dieRectangles[0].count; i++){
+                outFile << i << "\t\t\t\t\t\t" <<  dieRectangles[i].x_position << "\t\t\t\t\t\t" <<dieRectangles[i].y_position << "\t\t\t\t" << dieRectangles[i].width << "\t\t\t\t\t" << dieRectangles[i].length << endl;
+                usedAreadFromPads += (coreRectangles[i].width * coreRectangles[i].length);
+        }
+        int dieWidth = CoreWidth + 2 * coreRectangles[0].width;
+        int dieLength = CoreLength + 2 * coreRectangles[0].length;
         int totalArea = CoreWidth * CoreLength;
         int totalusedArea = 0;
+        outFile << "-------------------------------\n";
+        outFile << "After placing i/o pads:\nTotal Area: " << dieWidth * dieLength  << "\t\t\tTotal Used Area: " << totalusedArea + usedAreadFromPads << "\t\t\tUtilization Factor of Area:" << 1.0* (totalusedArea + usedAreadFromPads) / (dieWidth * dieLength);
+        outFile << "\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
+        outFile << "\n-------------------------------\n\n";
+
+        
+
+
+        
+        outFile << "\n\n\nSolving Part Two (Hard Core Cells)\n";
         outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
         for (int i = 0; i < coreRectangles.size(); i++){
-                outFile << i << "\t\t\t\t\t\t" << coreRectangles[i].x_position << "\t\t\t\t\t\t" << coreRectangles[i].y_position << "\t\t\t\t" << coreRectangles[i].width << "\t\t\t\t\t" << coreRectangles[i].length << endl;
+                outFile << i << "\t\t\t\t\t\t" << CoreWidthStart + coreRectangles[i].x_position << "\t\t\t\t\t\t" << CoreLengthStart + coreRectangles[i].y_position << "\t\t\t\t" << coreRectangles[i].width << "\t\t\t\t\t" << coreRectangles[i].length << endl;
                 totalusedArea += (coreRectangles[i].width * coreRectangles[i].length);
         }
-        outFile << "-------------------------------\nAfter placing hard cells:\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
+        outFile << "-------------------------------\n";
+        outFile << "After placing Hard Core Cells:\nTotal Area: " << dieWidth * dieLength  << "\t\t\tTotal Used Area: " << totalusedArea + usedAreadFromPads << "\t\t\tUtilization Factor of Area:" << 1.0* (totalusedArea + usedAreadFromPads) / (dieWidth * dieLength);
+        outFile << "\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
+        outFile << "\n-------------------------------\n\n";
 
-        outFile << "\n\n\nSolving Part Three (i/o pads)\n";
+
+
+        outFile << "\n\n\n\nSolving Part Three (Soft Area Cells)\n";
         outFile << "Cell Number \t\t\t" << "X_Position\t\t\t" << "Y_Position\t\t\t" << "Width\t\t\t" << "Length\t\t\t\n";
         for (int i = 0; i < softRectangles.size(); i++){
-                outFile << i << "\t\t\t\t\t\t" << softRectangles[i].x_position << "\t\t\t\t\t\t" << softRectangles[i].y_position << "\t\t\t\t" << softRectangles[i].width << "\t\t\t\t\t" << softRectangles[i].length << endl;
+                outFile << i << "\t\t\t\t\t\t" << CoreWidthStart + softRectangles[i].x_position << "\t\t\t\t\t\t" << CoreLengthStart + softRectangles[i].y_position << "\t\t\t\t" << softRectangles[i].width << "\t\t\t\t\t" << softRectangles[i].length << endl;
                 totalusedArea += (softRectangles[i].width * softRectangles[i].length);
         }
-        outFile << "-------------------------------\nAfter placing soft cells:\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
+        outFile << "-------------------------------\n";
+        outFile << "After placing Soft Area Cells:\nTotal Area: " << dieWidth * dieLength  << "\t\t\tTotal Used Area: " << totalusedArea + usedAreadFromPads << "\t\t\tUtilization Factor of Area:" << 1.0* (totalusedArea + usedAreadFromPads) / (dieWidth * dieLength);
+        outFile << "\ntotalCoreArea: " << totalArea << "\t\t\ttotalUsedCoreArea: " << totalusedArea << "\t\t\tUtilization Factor of Core Area:" << 1.0* totalusedArea / totalArea;
+        outFile << "\n-------------------------------\n\n";
 
 
         outFile.close();
