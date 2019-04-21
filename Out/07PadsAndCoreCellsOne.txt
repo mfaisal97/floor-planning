@@ -1,0 +1,47 @@
+Solving Part One (i/o pads)
+The die is core constrained ...
+Cell Number 			X_Position			Y_Position			Width			Length			
+0						15						0				15					15
+1						30						0				15					15
+2						45						0				15					15
+3						60						0				15					15
+4						75						0				15					15
+5						15						150				15					15
+6						30						150				15					15
+-------------------------------
+After placing i/o pads:
+Total Area: 18150			Total Used Area: 1575			Utilization Factor of Area:0.0867769
+totalCoreArea: 10800			totalUsedCoreArea: 0			Utilization Factor of Core Area:0
+-------------------------------
+
+
+
+
+Solving Part Two (Hard Core Cells)
+Cell Number 			X_Position			Y_Position			Width			Length			
+0						50						45				0					0
+1						60						15				15					80
+2						15						15				15					80
+3						75						15				15					80
+4						30						25				20					70
+5						130						15				20					70
+6						110						15				20					70
+7						90						15				20					70
+-------------------------------
+After placing Hard Core Cells:
+Total Area: 18150			Total Used Area: 10775			Utilization Factor of Area:0.593664
+totalCoreArea: 10800			totalUsedCoreArea: 9200			Utilization Factor of Core Area:0.851852
+-------------------------------
+
+
+
+
+
+Solving Part Three (Soft Area Cells)
+Cell Number 			X_Position			Y_Position			Width			Length			
+-------------------------------
+After placing Soft Area Cells:
+Total Area: 18150			Total Used Area: 10775			Utilization Factor of Area:0.593664
+totalCoreArea: 10800			totalUsedCoreArea: 9200			Utilization Factor of Core Area:0.851852
+-------------------------------
+

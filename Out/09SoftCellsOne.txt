@@ -1,0 +1,26 @@
+
+
+
+Solving Part Two (Hard Core Cells)
+Cell Number 			X_Position			Y_Position			Width			Length			
+-------------------------------
+After placing Hard Core Cells:
+Total Area: 3000			Total Used Area: 0			Utilization Factor of Area:0
+totalCoreArea: 3000			totalUsedCoreArea: 0			Utilization Factor of Core Area:0
+-------------------------------
+
+
+
+
+
+Solving Part Three (Soft Area Cells)
+Cell Number 			X_Position			Y_Position			Width			Length			
+0						0						0				100					10
+1						0						10				100					10
+2						0						20				100					10
+-------------------------------
+After placing Soft Area Cells:
+Total Area: 3000			Total Used Area: 3000			Utilization Factor of Area:1
+totalCoreArea: 3000			totalUsedCoreArea: 3000			Utilization Factor of Core Area:1
+-------------------------------
+
