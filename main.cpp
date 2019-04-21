@@ -104,8 +104,10 @@ int getikRelation(int i, int k){
 }
 
 void checkThis(CMIP& prob){
-        prob.printMatrix("matrix.txt");
-        system("read -p \'Press Enter to continue...\' var");
+        if(false){
+                prob.printMatrix("matrix.txt");
+                system("read -p \'Press Enter to continue...\' var");
+        }
 }
 
 // checkThis(prob);
@@ -515,14 +517,14 @@ int main(int argc, char *argv[]){
                 cout << fileName << "\n";
         }
 
-        if(!parseInputConstraints(dieHardRectangles, coreHardRectangles, softRectangles, fileName)){
+        if(!parseInputConstraints(dieHardRectangles, coreHardRectangles, softRectangles, "./In/" + fileName)){
                 cout << "Input File doesnot meet the specified requirements\n";
                 exit(-1);
         }
 
         solveProblem(dieHardRectangles, coreHardRectangles, softRectangles, stoi(argv[2]) , stoi(argv[3]));
 
-        visualizeProblem(dieHardRectangles, coreHardRectangles, softRectangles, "OutFor" + fileName);
+        visualizeProblem(dieHardRectangles, coreHardRectangles, softRectangles, "./Out/" + fileName);
 
         
 
